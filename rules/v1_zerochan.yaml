@@ -1,0 +1,95 @@
+options: &OPTIONS
+  - id: "order"
+    desc: "排序方式"
+    items:
+      - { desc: "最近的", param: "id" }
+      - { desc: "流行的", param: "fav" }
+
+display: &DISPLAY
+  columnCount: 6
+  aspectRatio: 1.65
+
+config:
+  meta:
+    name: "zerochan.net"
+
+homePage:
+  config: &HOMEPAGE_CONFIG
+    display:
+      *DISPLAY
+    options:
+      *OPTIONS
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "https://www.zerochan.net/?p=${page}&s=${order}&t=1"
+    - onParseResult: &HOMEPAGE_ONPARSERESULT
+        list:
+          getElements: { cssSelector: "#thumbs2 li[class]" }
+          foreach:
+            coverUrl:
+              get: { cssSelector: "img:not([style])", attr: "data-src" }
+            href:
+              get: { cssSelector: "a[tabindex]", attr: "href" }
+              format:
+                - concat: { start: "https://www.zerochan.net", end: "" }
+            tagStr:
+              get: { cssSelector: "p a", text: "" }
+            tagSplit:
+              get: { default: "," }
+            width:
+              get: { cssSelector: "img:not([style])", attr: "width" }
+            height:
+              get: { cssSelector: "img:not([style])", attr: "height" }
+            id:
+              get: { cssSelector: "", attr: "data-id" }
+            author:
+              get: { cssSelector: "img:not([style])", attr: "title" }
+              format:
+                - split: { by: "\n", index: 1 }
+            authorId:
+              get: { cssSelector: "img:not([style])", attr: "title" }
+              format:
+                - split: { by: "\n", index: 1 }
+
+searchPage:
+  config:
+    *HOMEPAGE_CONFIG
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "https://www.zerochan.net/${keyword}?p=${page}"
+        keywordConnector: "+"
+    - onParseResult:
+        *HOMEPAGE_ONPARSERESULT
+
+detailPage:
+  chain:
+    - onParseResult:
+        object:
+          url:
+            get: { cssSelector: ".preview img", attr: "src" }
+          tagStr:
+            get: { cssSelector: "#large p[style]", text: "" }
+          tagSplit:
+            get: { default: "," }
+          id:
+            get: { cssSelector: "#large a[rel=next]", attr: "href" }
+            format:
+              - replaceAll: { from: "#content", to: "" }
+              - replaceAll: { from: "/", to: "" }
+          rawUrl:
+            get: { cssSelector: "a[class=preview]", attr: "href" }
+          source:
+            get: { cssSelector: "#source-url", text: "" }
+
+authorPage:
+  config:
+    *HOMEPAGE_CONFIG
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "https://www.zerochan.net/${authorId}"
+        authorIdConnector: "+"
+    - onParseResult:
+        *HOMEPAGE_ONPARSERESULT

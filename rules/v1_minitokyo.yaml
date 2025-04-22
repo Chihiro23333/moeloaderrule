@@ -1,0 +1,99 @@
+options: &OPTIONS
+  - id: "type"
+    desc: "类型"
+    items:
+      - { desc: "mobile", param: "mobile" }
+      - { desc: "indy-art", param: "indy-art" }
+      - { desc: "scans", param: "scans" }
+      - { desc: "wallpapers", param: "wallpapers" }
+  - id: "order"
+    desc: "排序方式"
+    items:
+      - { desc: "Recent", param: "id" }
+      - { desc: "Popular", param: "favorites" }
+config:
+  meta:
+    name: "minitokyo.mobile"
+  headers:
+    User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+homePage:
+  config: &HOMEPAGE_CONFIG
+    display:
+      columnCount: 6
+      aspectRatio: 0.5
+    options:
+      *OPTIONS
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "http://gallery.minitokyo.net/${type}?order=${order}&display=extensive&page=${page}"
+    - onParseResult: &HOMEPAGE_ONPARSERESULT
+        list:
+          getElements: { cssSelector: "ul[class=wallpapers] li[style^=float]" }
+          foreach:
+            coverUrl:
+              get: { cssSelector: "a[tabindex] img", attr: "src" }
+            href:
+              get: { cssSelector: "a[tabindex]", attr: "href" }
+            id:
+              get: { cssSelector: "a[tabindex]", attr: "href" }
+              format:
+                - replaceAll: { from: "http://gallery.minitokyo.net/view/", to: "" }
+            width:
+              get: { cssSelector: "p", text: "" }
+              find:
+                - regex: { regex: '\d+(?=x)', index: 0 }
+            height:
+              get: { cssSelector: "p", text: "" }
+              find:
+                - regex: { regex: 'x(\d+)', index: 1 }
+            tagList:
+              list:
+                getElements: { cssSelector: "#content p[class=more]" }
+                foreach:
+                  desc:
+                    get: { cssSelector: "", text: "" }
+                    find:
+                      - regex: { regex: "(?<=Browse).*?(?=Gallery:)", index: 0 }
+                  tag:
+                    get: { cssSelector: "a", attr: "href" }
+                    find:
+                      - regex: { regex: "(?<=tid=).*?(?=&)", index: 0 }
+
+searchPage:
+  config:
+    *HOMEPAGE_CONFIG
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "http://browse.minitokyo.net/gallery?tid=${keyword}&order=id&index=3&display=extensive"
+    - onParseResult:
+        *HOMEPAGE_ONPARSERESULT
+
+detailPage:
+  chain:
+    - onParseResult:
+        object:
+          url:
+            get: { cssSelector: "#preview img", attr: "src" }
+          rawUrl:
+            get: { cssSelector: "#preview img", attr: "src" }
+            format:
+              - replaceAll: { from: "/view/", to: "/downloads/" }
+          id:
+            get: { cssSelector: "link[rel=canonical]", text: "href" }
+            format:
+              - replaceAll: { from: "/view/", to: "" }
+          tagList:
+            list:
+              getElements: { cssSelector: "#content p[class=more]" }
+              foreach:
+                desc:
+                  get: { cssSelector: "", text: "" }
+                  find:
+                    - regex: { regex: "(?<=Browse).*?(?=Gallery:)", index: 0 }
+                tag:
+                  get: { cssSelector: "a", attr: "href" }
+                  find:
+                    - regex: { regex: "(?<=tid=).*?(?=&)", index: 0 }

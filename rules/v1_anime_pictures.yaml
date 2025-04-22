@@ -1,0 +1,114 @@
+options: &OPTIONS
+  - id: "type"
+    desc: "类型"
+    items:
+      - { desc: "New pictures", param: "posts" }
+      - { desc: "Anime Girls", param: "anime-girls" }
+  - id: "aspectRatio"
+    desc: "比例"
+    items:
+      - { desc: "默认", param: "" }
+      - { desc: "4:3", param: "&aspect=4%3A3" }
+      - { desc: "8:5 (16:10)", param: "&aspect=8%3A5" }
+      - { desc: "16:9", param: "&aspect=16%3A9" }
+      - { desc: "1.85", param: "&aspect=1.85" }
+      - { desc: "square", param: "&aspect=1%3A1" }
+      - { desc: "5:8 (10:16)", param: "&aspect=5%3A8" }
+      - { desc: "9:16", param: "&aspect=9%3A16" }
+  - id: "orderBy"
+    desc: "排序方式"
+    items:
+      - { desc: "默认", param: "" }
+      - { desc: "date", param: "&order_by=date" }
+      - { desc: "date(revers)", param: "&order_by=date_r" }
+      - { desc: "rating", param: "&order_by=rating" }
+      - { desc: "downloads", param: "&order_by=views" }
+      - { desc: "size", param: "&order_by=size" }
+      - { desc: "tag count", param: "&order_by=tag_num" }
+
+display: &DISPLAY
+  columnCount: 6
+  aspectRatio: 1.65
+
+config:
+  meta:
+    name: "anime-pictures.net"
+
+  headers:
+    user-agent: "MoeLoaderFlutter"
+    cookie: "sitelang=zh-cn;"
+
+homePage:
+  config: &HOMEPAGE_CONFIG
+    options:
+      *OPTIONS
+    display:
+      *DISPLAY
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "https://anime-pictures.net/${type}?page=${page}${aspectRatio}${orderBy}&lang=en"
+        pageOffset: -1
+    - onParseResult: &HOMEPAGE_ONPARSERESULT
+        list:
+          getElements: { cssSelector: "span[class^=img-block]" }
+          foreach:
+            coverUrl:
+              get: { cssSelector: "a img", attr: "src" }
+              format:
+                - concat: { start: "https:", end: "" }
+            href:
+              get: { cssSelector: "a[target]", attr: "href" }
+              format:
+                - concat: { start: "https://anime-pictures.net", end: "" }
+                - replaceAll: { from: "./", to: "/" }
+            width:
+              get: { cssSelector: "a[class]", text: "" }
+              find:
+                - regex: { regex: '^\d+', index: 0 }
+            height:
+              get: { cssSelector: "a[class]", text: "" }
+              find:
+                - regex: { regex: '^\d+x(\d+)', index: 1 }
+            dimensions:
+              get: { cssSelector: "a[rel]", attr: "title" }
+              format:
+                - replaceAll: { from: "Anime picture", to: "" }
+            id:
+              get: { cssSelector: "a[rel]", attr: "href" }
+              format:
+                - replaceAll: { from: "/posts/", to: "" }
+                - replaceAll: { from: "?lang=en", to: "" }
+
+searchPage:
+  config:
+    *HOMEPAGE_CONFIG
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "https://anime-pictures.net/posts?page=${page}&search_tag=${keyword}&lang=en"
+        keywordConnector: "+"
+        pageOffset: -1
+    - onParseResult:
+        *HOMEPAGE_ONPARSERESULT
+
+detailPage:
+  chain:
+    - onParseResult:
+        object:
+          url:
+            get: { cssSelector: "#big_preview", attr: "src" }
+            format:
+              - concat: { start: "https:", end: "" }
+          rawUrl:
+            get: { cssSelector: "a[download]", attr: "href" }
+            format:
+              - concat: { start: "${redirect}", end: "" }
+          authorId:
+            get: { cssSelector: '[class*="orange"] a', text: "" }
+          author:
+            get: { cssSelector: '[class*="orange"] a', text: "" }
+          tagStr:
+            get: { cssSelector: "ul[itemprop=keywords] a", text: "" }
+          tagSplit:
+            get: { default: "," }

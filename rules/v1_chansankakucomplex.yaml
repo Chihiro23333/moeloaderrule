@@ -1,0 +1,83 @@
+display: &DISPLAY
+  columnCount: 6
+  aspectRatio: 1.65
+
+options: &OPTIONS
+  - id: "rating"
+    desc: "评级"
+    items:
+      - { desc: "safe", param: "+rating%3Asafe" }
+      - { desc: "all", param: "" }
+      - { desc: "questionable", param: "+rating%3Aquestionable" }
+      - { desc: "explicit", param: "+rating%3Aexplicit" }
+
+headers: &HEADERS
+  User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+config:
+  meta:
+    name: "chan.sankakucomplex.com"
+  headers:
+    *HEADERS
+  validateUrl: "https://chan.sankakucomplex.com/posts"
+
+  home: { link: "https://chan.sankakucomplex.com/posts?page=${page}&tags=${rating}" }
+  search: { link: "https://chan.sankakucomplex.com/posts?page=${page}&tags=${tag}${rating}", tagConnector: "" }
+
+
+homePage:
+  config: &HOMEPAGE_CONFIG
+    options:
+      *OPTIONS
+    display:
+      *DISPLAY
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "https://chan.sankakucomplex.com/posts?page=${page}&tags=${rating}"
+    - onValidateResult: &HOMEPAGE_ONPARSERESULT
+        - regex: { regex: "成人内容提示", action: "login" }
+      onParseResult:
+        list:
+          getElements: { cssSelector: "article[data-id]" }
+          foreach:
+            coverUrl:
+              get: { cssSelector: "img", attr: "src" }
+              format:
+                - concat: { start: "https:", end: "" }
+            href:
+              get: { cssSelector: "a", attr: "href" }
+              format:
+                - concat: { start: "https://chan.sankakucomplex.com/", end: "" }
+            width:
+              get: { cssSelector: "img", attr: "width" }
+            height:
+              get: { cssSelector: "img", attr: "height" }
+
+searchPage:
+  config:
+    *HOMEPAGE_CONFIG
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "https://chan.sankakucomplex.com/posts?page=${page}&tags=${tag}${rating}"
+        tagConnector: ""
+    - *HOMEPAGE_ONPARSERESULT
+
+
+detailPage:
+  chain:
+    - onValidateResult:
+        - { regex: "成人内容提示", action: "login" }
+    - onParseResult:
+        object:
+          url:
+            get: { cssSelector: "#highres", attr: "href" }
+            format:
+              - concat: { start: "https:", end: "" }
+          tags:
+            list:
+              get: { cssSelector: "a[itemprop=keywords]", text: "" }
+              toList: { separator: "," }
+          id:
+            get: { cssSelector: "#hidden_post_id", text: "" }

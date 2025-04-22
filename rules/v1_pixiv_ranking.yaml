@@ -1,0 +1,201 @@
+headers: &HEADERS
+  Referer: "https://www.pixiv.net/"
+  User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+options: &OPTIONS
+  - id: "type"
+    desc: "类型"
+    items:
+      - { desc: "综合", param: "" }
+      - { desc: "插画", param: "&content=illust" }
+  - id: "mode"
+    desc: "排行榜"
+    items:
+      - { desc: "今日", param: "&mode=daily" }
+      - { desc: "本周", param: "&mode=weekly" }
+      - { desc: "本月", param: "&mode=monthly" }
+      - { desc: "新人", param: "&mode=rookie" }
+      - { desc: "原创", param: "&mode=original" }
+      - { desc: "受男性欢迎", param: "&mode=male" }
+      - { desc: "受女性欢迎", param: "&mode=female" }
+  - id: "xx"
+    desc: "xx"
+    items:
+      - { desc: "一般", param: "" }
+      - { desc: "xx", param: "_r18" }
+
+searchOptions: &SEARCH_OPTIONS
+  - id: "mode"
+    desc: "类型"
+    items:
+      - { desc: "默认", param: "&mode=all" }
+      - { desc: "全年龄", param: "&mode=safe" }
+      - { desc: "xx", param: "&mode=r18" }
+
+display: &DISPLAY
+  columnCount: 6
+  aspectRatio: 1.0
+
+config:
+  meta:
+    name: "pixiv.net"
+  headers:
+    *HEADERS
+  validateUrl: "https://www.pixiv.net/"
+
+homePage:
+  config:
+    options:
+      *OPTIONS
+    display:
+      *DISPLAY
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "https://www.pixiv.net/ranking.php?p=${page}&format=json${mode}${xx}${type}"
+    - onParseResult:
+        contentType: "json"
+        list:
+          getNodes: { jsonpath: "$.contents" }
+          foreach:
+            coverUrl:
+              get: { jsonpath: ".url" }
+            href:
+              get: { jsonpath: ".illust_id" }
+              format:
+                - concat: { start: "https://www.pixiv.net/ajax/illust/", end: "?lang=zh" }
+            width:
+              get: { jsonpath: ".width" }
+            height:
+              get: { jsonpath: ".height" }
+            id:
+              get: { jsonpath: ".illust_id" }
+            author:
+              get: { jsonpath: ".user_name" }
+            authorId:
+              get: { jsonpath: ".user_id" }
+            characters:
+              get: { jsonpath: ".title" }
+            tagList:
+              list:
+                getNodes: { jsonpath: ".tags" }
+                foreach:
+                  desc:
+                    get: { jsonpath: "" }
+                  tag:
+                    get: { jsonpath: "" }
+
+searchPage:
+  config:
+    options:
+      *SEARCH_OPTIONS
+    display:
+      *DISPLAY
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "https://www.pixiv.net/ajax/search/artworks/${keyword}?word=${tag}&order=date_d${mode}&p=${page}&csw=0&s_mode=s_tag_full&type=all&lang=z"
+    - onParseResult:
+        contentType: "json"
+        list:
+          getNodes: { jsonpath: "$..illustManga.data" }
+          foreach:
+            coverUrl:
+              get: { jsonpath: ".url" }
+            href:
+              get: { jsonpath: ".id" }
+              format:
+                - concat: { start: "https://www.pixiv.net/ajax/illust/", end: "?lang=zh" }
+            tagList:
+              list:
+                getNodes: { jsonpath: ".tags" }
+                foreach:
+                  desc:
+                    get: { jsonpath: "" }
+                  tag:
+                    get: { jsonpath: "" }
+
+detailPage:
+  chain:
+    - onValidateResult:
+        - regex: { regex: '"thumb":null', action: "login" }
+      onParseResult:
+        contentType: "json"
+        object:
+          url:
+            get: { jsonpath: "$.body.urls.regular" }
+          rawUrl:
+            get: { jsonpath: "$.body.urls.original" }
+          width:
+            get: { jsonpath: "$.body.width" }
+          height:
+            get: { jsonpath: "$.body.height" }
+          id:
+            get: { jsonpath: "$.body.id" }
+          author:
+            get: { jsonpath: "$.body.userName" }
+          authorId:
+            get: { jsonpath: "$.body.userId" }
+          tagList:
+            list:
+              getNodes: { jsonpath: "$.body.tags.tags" }
+              foreach:
+                desc:
+                  get: { jsonpath: ".tag" }
+                tag:
+                  get: { jsonpath: ".tag" }
+
+authorPage:
+  chain:
+    - onParseResult:
+        contentType: "request"
+        link: "https://www.pixiv.net/ajax/user/${authorId}/profile/all?sensitiveFilterMode=userSetting&lang=zh"
+    - onParseResult:
+        contentType: "json_transform"
+        keyFlatten: "body.illusts"
+    - onParseResult:
+        contentType: "json"
+        toParams: true
+        object:
+          ids:
+            get: { jsonpath: "$.body.illusts", countPerPage: 10 }
+            format:
+              - replaceAll: { from: "[", to: "" }
+              - replaceAll: { from: "]", to: "" }
+              - concat: { start: "ids%5B%5D=", end: "" }
+              - replaceAll: { from: ", ", to: "&ids%5B%5D=" }
+    - onParseResult:
+        contentType: "request"
+        link: "https://www.pixiv.net/ajax/user/${authorId}/profile/illusts?${ids}&work_category=illustManga&is_first_page=0&sensitiveFilterMode=userSetting&lang=zh"
+    - onParseResult:
+        contentType: "json_transform"
+        valueFlatten: "body.works"
+    - onValidateResult:
+        - regex: { regex: '"regular":null', action: "login" }
+      onParseResult:
+        contentType: "json"
+        list:
+          getNodes: { jsonpath: "$.body.works" }
+          foreach:
+            coverUrl:
+              get: { jsonpath: ".url" }
+            href:
+              get: { jsonpath: ".id" }
+              format:
+                - concat: { start: "https://www.pixiv.net/ajax/illust/", end: "?lang=zh" }
+            width:
+              get: { jsonpath: ".width" }
+            height:
+              get: { jsonpath: ".height" }
+            id:
+              get: { jsonpath: ".id" }
+            characters:
+              get: { jsonpath: ".title" }
+            tagList:
+              list:
+                getNodes: { jsonpath: ".tags" }
+                foreach:
+                  desc:
+                    get: { jsonpath: "" }
+                  tag:
+                    get: { jsonpath: "" }
