@@ -56,9 +56,12 @@ searchPage:
   config:
     *HOMEPAGE_CONFIG
   chain:
-    - onParseResult:
-        contentType: "request"
+    - onValidateResult:
+        - regex: { regex: '301', action: "redirect" }
+      onParseResult:
+        contentType: "no_redirect_request"
         link: "https://www.zerochan.net/${keyword}?p=${page}"
+        redirectLink: "https://www.zerochan.net${redirectUrl}?p=${page}"
         keywordConnector: "+"
     - onParseResult:
         *HOMEPAGE_ONPARSERESULT
