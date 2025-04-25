@@ -18,6 +18,8 @@ homePage:
           foreach:
             coverUrl:
               get: { cssSelector: "img", attr: "src" }
+              format:
+                - split: { by: '?', index: 0 }
             href:
               get: { cssSelector: "a", attr: "href" }
               format:
@@ -47,10 +49,16 @@ detailPage:
         object:
           url:
             get: { cssSelector: "#image", attr: "src" }
+            format:
+              - split: { by: '?', index: 0 }
           bigUrl:
             get: { cssSelector: "#highres", attr: "href" }
+            format:
+              - split: { by: '?', index: 0 }
           rawUrl:
             get: { cssSelector: "ul li a[style]", attr: "href" }
+            format:
+              - split: { by: '?', index: 0 }
           tagStr:
             get: { cssSelector: "#image", attr: "alt" }
           tagSplit:
