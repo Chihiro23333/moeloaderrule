@@ -6,8 +6,8 @@ options: &OPTIONS
   - id: "mode"
     desc: "类型"
     items:
-      - { desc: "默认", param: "&mode=all" }
       - { desc: "全年龄", param: "&mode=safe" }
+      - { desc: "默认", param: "&mode=all" }
       - { desc: "xx", param: "&mode=r18" }
 
 display: &DISPLAY
