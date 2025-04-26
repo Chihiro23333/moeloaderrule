@@ -44,7 +44,7 @@ homePage:
             tagStr:
               get: { cssSelector: "a[class=thumb] img", attr: "alt" }
               find:
-                - regex: { regex: "(?<=Tags:).*?(?=User:)", index: 0 }
+                - regex: { regex: "(?<=Tags: ).*?(?= User:)", index: 0 }
             tagSplit:
               get: { default: " " }
             width:

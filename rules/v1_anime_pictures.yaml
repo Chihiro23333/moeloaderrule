@@ -73,12 +73,13 @@ homePage:
             dimensions:
               get: { cssSelector: "a[rel]", attr: "title" }
               format:
-                - replaceAll: { from: "Anime picture", to: "" }
+                - split: { by: " ", index: -1 }
             id:
-              get: { cssSelector: "a[rel]", attr: "href" }
+              get: { cssSelector: "a[href]", attr: "href" }
               format:
+                - split: { by: "?", index: 0 }
                 - replaceAll: { from: "/posts/", to: "" }
-                - replaceAll: { from: "?lang=en", to: "" }
+                - replaceAll: { from: ".", to: "" }
 
 searchPage:
   config:
