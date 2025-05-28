@@ -47,11 +47,11 @@ homePage:
   chain:
     - onParseResult:
         contentType: "request"
-        link: "https://anime-pictures.net/${type}?page=${page}${aspectRatio}${orderBy}&lang=en"
+        link: "https://anime-pictures.net/${type}?page=${page}${aspectRatio}${orderBy}&lang=zh-cn"
         pageOffset: -1
     - onParseResult: &HOMEPAGE_ONPARSERESULT
         list:
-          getElements: { cssSelector: "span[class^=img-block]" }
+          getElements: { cssSelector: "[class~=img-block]" }
           foreach:
             coverUrl:
               get: { cssSelector: "a img", attr: "src" }
@@ -87,7 +87,7 @@ searchPage:
   chain:
     - onParseResult:
         contentType: "request"
-        link: "https://anime-pictures.net/posts?page=${page}&search_tag=${keyword}&lang=en"
+        link: "https://anime-pictures.net/posts?page=${page}&search_tag=${keyword}&lang=zh-cn"
         keywordConnector: "+"
         pageOffset: -1
     - onParseResult:
