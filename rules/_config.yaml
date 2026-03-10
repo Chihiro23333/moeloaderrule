@@ -54,9 +54,9 @@ rules:
     favicon: favicon_minitokyo.jpg
     canSearch: true
 
-  - name: konchan_chs
-    fileName: v1_konchan_chs.yaml
-    favicon: favicon_konchan_chs.png
+  - name: konachan_chs
+    fileName: v1_konachan_chs.yaml
+    favicon: favicon_konachan_chs.png
     canSearch: true
 
   - name: konachan(pool)
