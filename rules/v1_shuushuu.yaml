@@ -18,27 +18,27 @@ homePage:
         link: "https://e-shuushuu.net/${order}?page=${page}"
     - onParseResult: &HOMEPAGE_ONPARSERESULT
         list:
-          getElements: { cssSelector: "div[class='image_thread display']" }
+          getElements: { cssSelector: "div[class*='row-content']" }
           foreach:
             coverUrl:
-              get: { cssSelector: "a[class='thumb_image'] img", attr: "src" }
+              get: { cssSelector: "div[class*='thumbnail-container'] img", attr: "src" }
               format:
                 - concat: { start: "https://e-shuushuu.net", end: "" }
             href:
-              get: { cssSelector: "a[class='thumb_image']", attr: "href" }
+              get: { cssSelector: "div[class*='thumbnail-container'] a", attr: "href" }
               format:
                 - concat: { start: "https://e-shuushuu.net", end: "" }
             width:
-              get: { cssSelector: ".meta dl", text: "" }
+              get: { cssSelector: "div[class*='meta-line secondary'] span", index: 0, text: "" }
               find:
-                - regex: { regex: 'Dimensions:\s*(\d+)x(\d+)\s*\(', index: 1 }
+                - regex: { regex: '^(\d+)\s*[×xX\*]\s*\d+$', index: 1 }
             height:
-              get: { cssSelector: ".meta dl", text: "" }
+              get: { cssSelector: "div[class*='meta-line secondary'] span", index: 0, text: "" }
               find:
-                - regex: { regex: 'Dimensions:\s*(\d+)x(\d+)\s*\(', index: 2 }
+                - regex: { regex: '^\d+\s*[×xX\*]\s*(\d+)$', index: 1 }
             tagList:
               list:
-                getElements: { cssSelector: "[id^='quicktag1'] span a" }
+                getElements: { cssSelector: "div[class*='tag-group'] a" }
                 foreach:
                   desc:
                     get: { cssSelector: "", text: "" }
@@ -47,28 +47,17 @@ homePage:
                     format:
                       - replaceAll: { from: "/tags/", to: "" }
             id:
-              get: { cssSelector: "", attr: "id" }
+              get: { cssSelector: "div[class*='thumbnail-container'] a", attr: "data-image-id" }
             author:
-              get: { cssSelector: ".meta dl", text: "" }
-              find:
-                - regex: { regex: 'Artist:\s*"(.*?)"', index: 1 }
+              get: { cssSelector: "a[class*='username-link']", text: "" }
             authorId:
-              get: { cssSelector: ".tag a[href]", attr: "href" }
+              get: { cssSelector: "a[class*='username-link']", attr: "href" }
               format:
-                - split: { by: ',', index: -1 }
-                - split: { by: '/', index: -1 }
-            characters:
-              get: { cssSelector: ".meta dl", text: "" }
-              find:
-                - regex: { regex: "(?<=Characters:).*?(?=Artist:)", index: 0 }
+                - replaceAll: { from: "/users/", to: "" }
             fileSize:
-              get: { cssSelector: ".meta dl", text: "" }
-              find:
-                - regex: { regex: "(?<=File size:).*?(?=Dimensions:)", index: 0 }
+              get: { cssSelector: "div[class*='meta-line secondary'] span", index: 2, text: "" }
             dimensions:
-              get: { cssSelector: ".meta dl", text: "" }
-              find:
-                - regex: { regex: "(?<=Dimensions:).*?(?=Tags:)", index: 0 }
+              get: { cssSelector: "div[class*='meta-line secondary'] span", index: 0, text: "" }
 
 searchPage:
   config:
@@ -76,7 +65,7 @@ searchPage:
   chain:
     - onParseResult:
         contentType: "request"
-        link: "https://e-shuushuu.net/search/results/?page=${page}&tags=${keyword}"
+        link: "https://e-shuushuu.net/search?page=${page}&tags=${keyword}"
     - onParseResult:
         *HOMEPAGE_ONPARSERESULT
 
@@ -85,15 +74,17 @@ detailPage:
     - onParseResult:
         object:
           url:
-            get: { cssSelector: "", attr: "" }
+            get: { cssSelector: "div[class*='image-container'] img", attr: "src" }
           tags:
             list:
-              getElements: { cssSelector: "" }
+              getElements: { cssSelector: "div[class*='tag-group'] a" }
               foreach:
                 desc:
                   get: { cssSelector: "", text: "" }
                 tag:
-                  get: { cssSelector: "", attr: "" }
+                  get: { cssSelector: "", attr: "href" }
+                  format:
+                    - replaceAll: { from: "/tags/", to: "" }
 
 authorPage:
   config:
@@ -101,6 +92,6 @@ authorPage:
   chain:
     - onParseResult:
         contentType: "request"
-        link: "https://e-shuushuu.net/search/results/?page=${page}&tags=${authorId}"
+        link: "https://e-shuushuu.net/search?page=${page}&tags=${authorId}"
     - onParseResult:
         *HOMEPAGE_ONPARSERESULT
