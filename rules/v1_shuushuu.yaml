@@ -23,7 +23,7 @@ homePage:
             coverUrl:
               get: { cssSelector: "div[class*='thumbnail-container'] img", attr: "src" }
               format:
-                - concat: { start: "https://e-shuushuu.net", end: "" }
+                - concat: { start: "", end: "" }
             href:
               get: { cssSelector: "div[class*='thumbnail-container'] a", attr: "href" }
               format:

@@ -14,6 +14,10 @@ options: &OPTIONS
       - { desc: "50", param: "&limit=50" }
       - { desc: "80", param: "&limit=80" }
 
+headers: &HEADERS
+  Referer: "https://gelbooru.com/index.php"
+  User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
 display: &DISPLAY
   columnCount: 7
   aspectRatio: 0.65
@@ -21,6 +25,8 @@ display: &DISPLAY
 config:
   meta:
     name: "gelbooru.com"
+  headers:
+    *HEADERS
 
 homePage:
   config: &HOMEPAGE_CONFIG
